@@ -1,7 +1,5 @@
 #! /usr/bin/env bash
 
-set -e
-
 
 function usage(){
     prog=$(basename $0)
@@ -13,10 +11,10 @@ function usage(){
     OPTIONS:
         -i|--input      *   List of BAM files
         -l|--intervals  *   List of intervals
-        -d|--db         *   Path to the database
+        -d|--db         *   Path to the database (.RData)
         -k|--k              Number of controls [default: 100]
         -t|--threads        Number of threads to use [default: 16]
-        --sliding_windows   Use sliding windows to detect deletions shorter than interval size. 
+        --sliding-windows   Use sliding windows to detect deletions shorter than interval size. 
                             Argument value has to be WINDOW_SIZE:OVERLAP (see examples)
         -h|--help           This help
 
@@ -27,7 +25,7 @@ function usage(){
 }
 
 
-OPTIONS=i:d:l:o:h
+OPTIONS=i:d:l:o:t:h
 LONGOPTS=input:,db:,list:,output:threads:,sliding_windows:,help
 
 
@@ -57,7 +55,7 @@ while true; do
             intervals="$2"; shift 2 ;;
         -t|--threads)
             threads="$2"; shift 2 ;;
-        --sliding_windows)
+        --sliding-windows)
             sliding_windows=1; params="$2"; shift 2 ;;
         -h|--help)
             usage; exit 0 ;;
@@ -95,8 +93,7 @@ fi
 
 # Get sample name from its path
 function get_sample_name(){
-    filename="$1"
-    basename "${bam_file%%.*}"
+    basename "$1" | sed 's/\..*$//g'
 }
 
 function get_nearest_neighbors(){

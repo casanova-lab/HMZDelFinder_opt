@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-set -e
+set -x
 
 function usage(){
     prog=$(basename $0)
@@ -106,7 +106,7 @@ fi
 
 
 # Directory where per sample coverage is stored.
-# Can be removed when the database is generated.
+# Can be removed when the database has been generated.
 DIR_COVERAGE="per_sample_coverage"
 DIR_LOG="log"
 
@@ -120,7 +120,7 @@ while read bam_file; do
     fi
 done < "$input_file" > to_be_processed-$$.list
 
-parallel -j "$threads" mosdepth --by "$intervals" --no-per-base --fast-mode --mapq 10 -t 1 "$DIR_COVERAGE/"{/.} {} :::: "to_be_processed-$$.list" &> "$DIR_LOG/1-mosdepth.log"
+parallel -j "$threads" mosdepth --by "$intervals" --no-per-base --fast-mode --mapq 10 -t 1 "$DIR_COVERAGE/"{/.} {} :::: "to_be_processed-$$.list"
 
 rm -f "to_be_processed-$$.list"
 

@@ -4,7 +4,7 @@ library(argparser)
 
 # Path to HMZDelFinder R script
 # src/HMZDelFinder.R
-PATH_HMZDELFINDER <- "src/HMZDelFinder.R"
+PATH_HMZDELFINDER <- "/ru-auth/local/home/yseeleuthn/scratch/yseeleuthn/Coverage/hmzdelfinder/HMZDelFinder/src/HMZDelFinder.R"
 
 options(warn=1)
 
@@ -160,5 +160,5 @@ results <- runHMZDelFinder (NULL,		# vcfPaths - paths to VCF files for AOH analy
 write.csv(results$filteredCalls, paste0(outputDir,"hmzCalls.csv"), row.names=F )
 
 # plotting deletions
-lapply(1:nrow(results$filteredCalls),function(i){
-           plotDeletion(results$filteredCalls, i, results$bedOrdered, results$rpkmDtOrdered,  lowRPKMthreshold, plotsDir, mainText="")})
+#lapply(1:nrow(results$filteredCalls),function(i){
+#           plotDeletion(results$filteredCalls, i, results$bedOrdered, results$rpkmDtOrdered,  lowRPKMthreshold, plotsDir, mainText="")})

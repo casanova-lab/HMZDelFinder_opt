@@ -36,6 +36,9 @@ cols = colnames(data)
 data[, (cols) := lapply(.SD, scale), .SDcols=cols]
 data = data[, ..cols]
 
+# Remove NA columns
+data = data[,which(unlist(lapply(data, function(x)!all(is.na(x))))),with=F]
+
 # Compute the PCA
 eig = eigen(fast_cov(data))
 eigen_values = round(eig$values / sum(eig$values) * 100)
