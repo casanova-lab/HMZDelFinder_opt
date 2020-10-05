@@ -26,7 +26,7 @@ function usage(){
 
 
 OPTIONS=i:d:l:o:t:h
-LONGOPTS=input:,db:,list:,output:threads:,sliding_windows:,help
+LONGOPTS=input:,db:,list:,output:threads:,sliding-windows:,help
 
 
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
