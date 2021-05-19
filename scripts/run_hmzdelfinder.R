@@ -33,7 +33,7 @@ bamdir = paste0(args$input, "/")
 outdir = paste0(args$out, "/")
 
 # define working directory:
-workDir = getwd() 
+workDir = getwd()
 # set project and data directory 
 # replace mainDir with the location you want to store experiment results
 mainDir = paste0(workDir, "/", outdir, "/"); if (!file.exists(mainDir)){dir.create(mainDir)}
@@ -100,6 +100,7 @@ if (is.na(args$bed)){
 # To use own WES data and create RPKM files from BAM files one can use calcRPKMsFromBAMs function.
 # e.g:
 pathToBams <- paste0(workDir, "/", bamdir)
+print(pathToBams)
 bamFiles <- paste0(pathToBams, dir(pathToBams, "bam$"))
 rpkmDir <- dataDir  # place to store RPKM files
 sampleNames <- sapply(strsplit(dir(pathToBams, "bam$"), "[/_]"), function(x){x[1]}) # sample identifiers
@@ -132,7 +133,7 @@ rpkmPaths <- paste0(paste0(dataDir, ""), rpkmFiles) 	# list of paths to RPKM fil
 ########################################
 is_cmg <- FALSE 		# only for CMG project - otherwhise use FALSE
 lowRPKMthreshold <- 0.65# RPKM threshold  
-maxFrequency <- 0.05	# max frequncy of HMZ deletion; default =0.005
+maxFrequency <- 0.05	    # max frequency of HMZ deletion; default =0.005
 minAOHsize <- 1000		# min AOH size
 minAOHsig <- 0.45		# min AOH signal threshold
 vR_id<-"VR"				# ID from VCF FORMAT indicating the number of variant reads, for other variant callers could be "AD"

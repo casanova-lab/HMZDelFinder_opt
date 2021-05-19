@@ -27,6 +27,9 @@ fast_cov = function(x){
 
 data = fread(args$reference, header=T, verbose=F, showProgress=T)
 
+# Remove duplicates
+data[, .SD, .SDcols=unique(names(data))]
+
 # Remove samples with no variance
 cols_tbr = c(1:3, which(colSds(as.matrix(data[, 4:ncol(data)])) == 0) + 3)
 data[, (cols_tbr):=NULL]

@@ -1,5 +1,7 @@
 #! /usr/bin/env bash
 
+set -e
+set -x
 
 function usage(){
     prog=$(basename $0)
@@ -12,6 +14,7 @@ function usage(){
         -i|--input      *   List of BAM files
         -l|--intervals  *   List of intervals
         -d|--db         *   Path to the database (.RData)
+        -o|--output         Path to the output directory [default: .]
         -k|--k              Number of controls [default: 100]
         -t|--threads        Number of threads to use [default: 16]
         --sliding-windows   Use sliding windows to detect deletions shorter than interval size. 
@@ -25,8 +28,8 @@ function usage(){
 }
 
 
-OPTIONS=i:d:l:o:t:h
-LONGOPTS=input:,db:,list:,output:threads:,sliding-windows:,help
+OPTIONS=i:d:k:l:o:t:h
+LONGOPTS=input:,db:,k:,list:,output:threads:,sliding-windows:,help
 
 
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
@@ -42,6 +45,7 @@ threads=16
 k=100
 sliding_windows=0
 params=""
+outptut_dir="."
 
 while true; do
     case "$1" in
@@ -53,6 +57,8 @@ while true; do
             k="$2"; shift 2 ;;
         -l|--intervals)
             intervals="$2"; shift 2 ;;
+        -o|--output)
+            output_dir="$2"; shift 2 ;;
         -t|--threads)
             threads="$2"; shift 2 ;;
         --sliding-windows)
@@ -93,7 +99,7 @@ fi
 
 # Get sample name from its path
 function get_sample_name(){
-    basename "$1" | sed 's/\..*$//g'
+    basename "$1" | sed 's/[-_\.].*//g'
 }
 
 function get_nearest_neighbors(){
@@ -101,36 +107,40 @@ function get_nearest_neighbors(){
     bam_file="$1"
     ref_db="$2"
     k="$3"
+    outdir="$4"
 
     name=$(get_sample_name "$bam_file")
 
-    mkdir -p "$name"
+    mkdir -p "$outdir"
     $(dirname "${BASH_SOURCE[0]}")/scripts/get_nearest_exomes.R --input "$ref_db" --name "$bam_file" \
-    --number "$k" --output "$name/controls.list"
+    --number "$k" --output "$outdir/controls.list"
 }
 
 function link_bam_files(){
     bam_file="$1"
     name=$(get_sample_name "$bam_file")
 
-    mkdir -p "$name/bams/"
+    mkdir -p "$output_dir/$name/bams/"
     while read path; do
-        ln -fs $(readlink -f $path) "$name/bams/"
-    done < "$name/controls.list"
+        ln -fs $(readlink -f $path) "$output_dir/$name/bams/"
+    done < "$output_dir/$name/controls.list"
 }
-
 
 while read bam_file; do
     name=$(get_sample_name "$bam_file")
 
-    get_nearest_neighbors "$bam_file" "$ref_db" "$k"
+    get_nearest_neighbors "$bam_file" "$ref_db" "$k" "$output_dir/$name"
 
     link_bam_files "$bam_file"
 
     # Run HMZDelFinder
-    $(dirname "${BASH_SOURCE[0]}")/scripts/run_hmzdelfinder.R --input "$name/bams/" --out "$name" --threads "$threads" --data "$DATA_DIR" --bed "$intervals"
+    $(dirname "${BASH_SOURCE[0]}")/scripts/run_hmzdelfinder.R --input "$output_dir/$name/bams/" \
+    --out "$output_dir/$name" --threads "$threads" --data "$DATA_DIR" --bed "$intervals" || true
 
     # Get results
-    head -1 "$name/out/hmzCalls.csv" > "$name/hmzdelfinder_result.csv" && \
-    fgrep -w "$name" "$name/out/hmzCalls.csv" >> "$name/hmzdelfinder_result.csv"
+    head -1 "$output_dir/$name/out/hmzCalls.csv" > "$output_dir/$name/hmzdelfinder_result.csv" || true
+    fgrep -w "$name" "$output_dir/$name/out/hmzCalls.csv" >> "$output_dir/$name/hmzdelfinder_result.csv" || true
 done < "$input_file"
+
+# Remove tmp files
+rm -f "intervals-$$.bed"

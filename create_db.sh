@@ -1,7 +1,5 @@
 #! /usr/bin/env bash
 
-set -x
-
 function usage(){
     prog=$(basename $0)
     echo "
@@ -12,14 +10,14 @@ function usage(){
     OPTIONS:
         -i|--input      *   List of BAM files to add to the database
         -l|--intervals  *   List of intervals (Not mandatory if using '--update')
-        -o|--output         Output filename [default: ref_db.bed]
+        -o|--output         Output filename [default: ref_db.tsv]
         -t|--threads        Number of threads to use [default: 16]
         -u|--update         Update the database using the input list of BAM files.
         -h|--help           This help.
 
     EXAMPLES:
        $prog -i bams.list -l CCDS.bed -o database.tsv
-       $prog -i bams.list --update -o database.tsv
+       $prog -i bams.list --update database.tsv -o new_db.tsv
 "
 }
 
@@ -54,7 +52,7 @@ fi
 
 eval set -- "$PARSED"
 
-output="ref_db.bed"
+output="ref_db.tsv"
 threads=16
 update=0
 
@@ -114,15 +112,21 @@ mkdir -p "$DIR_LOG" "$DIR_COVERAGE"
 
 # Coverage per sample per interval
 # Do not reprocess files already processed
+in_db=()
+if [[ $update == 1 ]]; then
+    in_db=($(head -1 $prev_db | cut -f 4- | tr '\t' '\n'))
+fi
+
 while read bam_file; do
     if [[ ! -f $DIR_COVERAGE/$(basename $bam_file .bam).regions.bed.gz ]]; then
-        echo "$bam_file"
+        if [[ ! ("${in_db[@]}" =~ "$bam_file") ]]; then
+            echo "$bam_file"
+        fi
     fi
 done < "$input_file" > to_be_processed-$$.list
 
 parallel -j "$threads" mosdepth --by "$intervals" --no-per-base --fast-mode --mapq 10 -t 1 "$DIR_COVERAGE/"{/.} {} :::: "to_be_processed-$$.list"
 
-rm -f "to_be_processed-$$.list"
 
 
 # Extract coverage column
@@ -132,16 +136,19 @@ parallel -j "$threads" "echo {} > $DIR_COVERAGE/{/.}.col && \
 
 # Merge files
 # Here we can't use paste on all files directly because of the limit on the number of args in a 
-# command line. So we paste the files per batch of 500.
+# command line. So we use batches of 500 files.
 BATCH_SIZE=500
 
 if [[ "$update" == 1 ]]; then
     cp "$prev_db" "header-$$.txt"
+    file="to_be_processed-$$.list"
 else
     cat <(echo -e "chr\tstart\tstop") <(cut -f 1-3 "$intervals") > "header-$$.txt"
+    file="$input_file"
 fi
 
-sed "s/.*\//$DIR_COVERAGE\//g; s/\.[^\.]*$/.col/g" "$input_file" | \
+
+sed "s/.*\//$DIR_COVERAGE\//g; s/\.[^\.]*$/.col/g" "$file" | \
 split -l "$BATCH_SIZE" -d - group-$$-
 for group in "group-$$-"*; do 
     paste $(cat $group) > merge-$$-${group##group-$$-}
@@ -150,9 +157,9 @@ paste "header-$$.txt" merge-$$-* > "$output"
 
 # Remove temporary files
 if [[ "$update" == 1 ]]; then
-    rm -f "$intervals" "$update_input_file"
+    rm -f "intervals-$$.bed"
 fi
-rm -r "header-$$.txt" "group-$$-"* "merge-$$-"*
+rm -rf "header-$$.txt" "group-$$-"* "merge-$$-"* "to_be_processed-$$.list"
 
 
 # Compute distances between samples
