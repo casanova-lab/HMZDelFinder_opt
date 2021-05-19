@@ -79,7 +79,7 @@ find_homdel.sh -i input_bams.list -l intervals.bed --db ref_db.bed
 Find homozygous deletions using sliding windows on an interval list:
 
 ```bash
-find_homdel.sh -i input_bams.list -l intervals.bed --sliding_windows 100:50 --db ref_db.bed
+find_homdel.sh -i input_bams.list -l intervals.bed --sliding-windows 100:50 --db ref_db.bed
 ```
 
 Here, intervals will be split in windows of 100bp with 50bp overlap to identify HMZ partial exon deletions.
